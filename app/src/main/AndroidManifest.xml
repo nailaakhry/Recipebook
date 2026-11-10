@@ -11,18 +11,35 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.Recipebook">
+
+        <activity
+            android:name=".EditActivity"
+            android:exported="false"
+            android:label="Edit Resep"
+            android:theme="@style/Theme.Recipebook"
+            android:windowSoftInputMode="adjustResize" />
+
+        <activity
+            android:name=".DetailActivity"
+            android:exported="false"
+            android:label="Detail Resep"
+            android:theme="@style/Theme.Recipebook"
+            android:windowSoftInputMode="adjustResize" />
+
         <activity
             android:name=".MainActivity"
             android:exported="true"
             android:label="@string/app_name"
             android:theme="@style/Theme.Recipebook"
             android:windowSoftInputMode="adjustResize">
+
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
-
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
         </activity>
+
     </application>
 
 </manifest>

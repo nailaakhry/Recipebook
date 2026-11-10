@@ -21,6 +21,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.border
+import android.content.Intent
 import com.example.recipebook.R
 import androidx.lifecycle.viewmodel.compose.LocalViewModelStoreOwner
 import androidx.compose.ui.platform.LocalContext
@@ -33,12 +34,11 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.ui.draw.clip
+import androidx.compose.runtime.saveable.rememberSaveable
 import android.net.Uri
 import android.graphics.ImageDecoder
 import android.os.Build
 import android.provider.MediaStore
-import com.example.recipebook.screens.DetailRecipeScreen
-import com.example.recipebook.screens.EditRecipeScreen
 import androidx.compose.ui.graphics.asImageBitmap
 import com.example.recipebook.data.RecipeEntity
 import com.example.recipebook.screens.AddRecipeScreen
@@ -70,12 +70,8 @@ class MainActivity : ComponentActivity() {
                     factory = factory
                 )
 
-                var currentScreen by remember {
+                var currentScreen by rememberSaveable {
                     mutableStateOf("home")
-                }
-
-                var selectedRecipe by remember {
-                    mutableStateOf<RecipeEntity?>(null)
                 }
 
                 when (currentScreen) {
@@ -84,8 +80,13 @@ class MainActivity : ComponentActivity() {
                             viewModel = recipeViewModel,
                             onAddClick = { currentScreen = "add" },
                             onRecipeClick = { recipe ->
-                                selectedRecipe = recipe
-                                currentScreen = "detail"
+                                val intent = Intent(
+                                    this@MainActivity,
+                                    DetailActivity::class.java
+                                )
+
+                                intent.putExtra("RECIPE_ID", recipe.id)
+                                startActivity(intent)
                             }
                         )
                     }
@@ -101,39 +102,7 @@ class MainActivity : ComponentActivity() {
                             }
                         )
                     }
-                    "detail" -> {
-                        selectedRecipe?.let { recipe ->
-                            DetailRecipeScreen(
-                                recipe = recipe,
-                                onBack = {
-                                    currentScreen = "home"
-                                },
-                                onEdit = {
-                                    currentScreen = "edit"
-                                },
-                                onDelete = {
-                                    recipeViewModel.deleteRecipe(recipe)
-                                    selectedRecipe = null
-                                    currentScreen = "home"
-                                }
-                            )
-                        }
-                    }
-                    "edit" -> {
-                        selectedRecipe?.let { recipe ->
-                            EditRecipeScreen(
-                                recipe = recipe,
-                                onCancel = {
-                                    currentScreen = "detail"
-                                },
-                                onSave = { updatedRecipe ->
-                                    recipeViewModel.updateRecipe(updatedRecipe)
-                                    selectedRecipe = updatedRecipe
-                                    currentScreen = "detail"
-                                }
-                            )
-                        }
-                    }
+
                 }
             }
         }

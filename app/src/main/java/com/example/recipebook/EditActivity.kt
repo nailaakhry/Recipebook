@@ -1,0 +1,93 @@
+
+package com.example.recipebook
+
+import android.os.Bundle
+import androidx.activity.ComponentActivity
+import androidx.activity.compose.setContent
+import androidx.compose.runtime.*
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.ViewModelProvider
+import com.example.recipebook.data.RecipeDatabase
+import com.example.recipebook.data.RecipeRepository
+import com.example.recipebook.data.RecipeEntity
+import com.example.recipebook.viewmodel.RecipeViewModel
+import com.example.recipebook.viewmodel.RecipeViewModelFactory
+import com.example.recipebook.screens.EditRecipeScreen
+import com.example.recipebook.ui.theme.RecipebookTheme
+
+class EditActivity : ComponentActivity() {
+
+    override fun onCreate(savedInstanceState: Bundle?) {
+        super.onCreate(savedInstanceState)
+
+        val recipeId = intent.getIntExtra("RECIPE_ID", -1)
+
+        val database = RecipeDatabase.getDatabase(applicationContext)
+        val repository = RecipeRepository(database.recipeDao())
+        val factory = RecipeViewModelFactory(repository)
+
+        val recipeViewModel = ViewModelProvider(
+            this,
+            factory
+        )[RecipeViewModel::class.java]
+
+        setContent {
+            RecipebookTheme {
+                var recipe by remember {
+                    mutableStateOf<RecipeEntity?>(null)
+                }
+
+                var isLoading by remember {
+                    mutableStateOf(true)
+                }
+
+                LaunchedEffect(recipeId) {
+                    if (recipeId != -1) {
+                        recipeViewModel.getRecipeById(recipeId) {
+                            recipe = it
+                            isLoading = false
+                        }
+                    } else {
+                        isLoading = false
+                    }
+                }
+
+                when {
+                    isLoading -> {
+                        Box(
+                            modifier = Modifier.fillMaxSize(),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            CircularProgressIndicator(
+                                color = Color(0xFF8B5E3C)
+                            )
+                        }
+                    }
+
+                    recipe != null -> {
+                        EditRecipeScreen(
+                            recipe = recipe!!,
+                            onCancel = {
+                                finish()
+                            },
+                            onSave = { updatedRecipe ->
+                                recipeViewModel.updateRecipe(updatedRecipe) {
+                                    finish()
+                                }
+                            }
+                        )
+                    }
+
+                    else -> {
+                        finish()
+                    }
+                }
+            }
+        }
+    }
+}
