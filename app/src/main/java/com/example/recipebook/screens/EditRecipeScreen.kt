@@ -31,6 +31,7 @@ import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.text.style.TextAlign
 import java.io.File
 import java.io.FileOutputStream
@@ -50,25 +51,28 @@ fun EditRecipeScreen(
     onCancel: () -> Unit,
     onSave: (RecipeEntity) -> Unit
 ) {
-    var recipeName by remember {
+    var recipeName by rememberSaveable(recipe.id) {
         mutableStateOf(recipe.title)
     }
 
-    var category by remember {
+    var category by rememberSaveable(recipe.id) {
         mutableStateOf(recipe.category)
     }
 
-    var ingredients by remember {
+    var ingredients by rememberSaveable(recipe.id) {
         mutableStateOf(recipe.ingredients)
     }
 
-    var steps by remember {
+    var steps by rememberSaveable(recipe.id) {
         mutableStateOf(recipe.steps)
+    }
+    var errorMessage by rememberSaveable(recipe.id) {
+        mutableStateOf("")
     }
 
     val context = LocalContext.current
 
-    var imagePath by remember {
+    var imagePath by rememberSaveable(recipe.id) {
         mutableStateOf(recipe.imageUri)
     }
 
@@ -211,15 +215,35 @@ fun EditRecipeScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        Text(
-            text = "Nama Resep",
-            color = Brown,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Nama Resep",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Nama resep wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = recipeName,
-            onValueChange = { recipeName = it },
+            onValueChange = {
+                recipeName = it
+
+                if (it.isNotBlank() && errorMessage == "Nama resep wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text("Nama resep")
@@ -256,15 +280,35 @@ fun EditRecipeScreen(
 
         Spacer(modifier = Modifier.height(18.dp))
 
-        Text(
-            text = "Bahan-bahan",
-            color = Brown,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Bahan-bahan",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Bahan-bahan wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = ingredients,
-            onValueChange = { ingredients = it },
+            onValueChange = {
+                ingredients = it
+
+                if (it.isNotBlank() && errorMessage == "Bahan-bahan wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text("Tuliskan bahan-bahan resep...")
@@ -275,15 +319,35 @@ fun EditRecipeScreen(
         )
         Spacer(modifier = Modifier.height(18.dp))
 
-        Text(
-            text = "Cara Memasak",
-            color = Brown,
-            fontWeight = FontWeight.Bold
-        )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Cara Memasak",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Cara memasak wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = steps,
-            onValueChange = { steps = it },
+            onValueChange = {
+                steps = it
+
+                if (it.isNotBlank() && errorMessage == "Cara memasak wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text("Tuliskan cara memasak...")
@@ -308,20 +372,32 @@ fun EditRecipeScreen(
 
             Button(
                 onClick = {
-                    if (
-                        recipeName.isNotBlank() &&
-                        ingredients.isNotBlank() &&
-                        steps.isNotBlank()
-                    ) {
-                        onSave(
-                            recipe.copy(
-                                title = recipeName,
-                                category = category,
-                                ingredients = ingredients,
-                                steps = steps,
-                                imageUri = imagePath
+                    when {
+                        recipeName.isBlank() -> {
+                            errorMessage = "Nama resep wajib diisi."
+                        }
+
+                        ingredients.isBlank() -> {
+                            errorMessage = "Bahan-bahan wajib diisi."
+                        }
+
+                        steps.isBlank() -> {
+                            errorMessage = "Cara memasak wajib diisi."
+                        }
+
+                        else -> {
+                            errorMessage = ""
+
+                            onSave(
+                                recipe.copy(
+                                    title = recipeName,
+                                    category = category,
+                                    ingredients = ingredients,
+                                    steps = steps,
+                                    imageUri = imagePath
+                                )
                             )
-                        )
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f),

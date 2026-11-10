@@ -21,6 +21,8 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.foundation.Image
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AddPhotoAlternate
+import androidx.compose.runtime.saveable.rememberSaveable
+import android.graphics.BitmapFactory
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.draw.drawBehind
 import androidx.activity.result.PickVisualMediaRequest
@@ -46,10 +48,21 @@ fun AddRecipeScreen(
     onCancel: () -> Unit,
     onSave: (RecipeEntity) -> Unit
 ) {
-    var recipeName by remember { mutableStateOf("") }
-    var category by remember { mutableStateOf("Makanan") }
-    var ingredients by remember { mutableStateOf("") }
-    var steps by remember { mutableStateOf("") }
+    var recipeName by rememberSaveable {
+        mutableStateOf("")
+    }
+    var category by rememberSaveable {
+        mutableStateOf("Makanan")
+    }
+    var ingredients by rememberSaveable {
+        mutableStateOf("")
+    }
+    var steps by rememberSaveable {
+        mutableStateOf("")
+    }
+    var errorMessage by rememberSaveable {
+        mutableStateOf("")
+    }
     val textFieldColors = OutlinedTextFieldDefaults.colors(
         focusedTextColor = TextDark,
         unfocusedTextColor = TextDark,
@@ -63,18 +76,13 @@ fun AddRecipeScreen(
     )
     val context = LocalContext.current
 
-    var selectedImageUri by remember {
-        mutableStateOf<Uri?>(null)
-    }
-
-    var savedImagePath by remember {
+    var savedImagePath by rememberSaveable {
         mutableStateOf<String?>(null)
     }
 
     val galleryLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickVisualMedia()
     ) { uri ->
-        selectedImageUri = uri
         savedImagePath = null
 
         if (uri != null) {
@@ -103,21 +111,9 @@ fun AddRecipeScreen(
         }
     }
 
-    val selectedBitmap = remember(selectedImageUri) {
-        selectedImageUri?.let { uri ->
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-                ImageDecoder.decodeBitmap(
-                    ImageDecoder.createSource(
-                        context.contentResolver,
-                        uri
-                    )
-                ).asImageBitmap()
-            } else {
-                MediaStore.Images.Media.getBitmap(
-                    context.contentResolver,
-                    uri
-                ).asImageBitmap()
-            }
+    val selectedBitmap = remember(savedImagePath) {
+        savedImagePath?.let { path ->
+            BitmapFactory.decodeFile(path)?.asImageBitmap()
         }
     }
 
@@ -236,11 +232,35 @@ fun AddRecipeScreen(
         Spacer(modifier = Modifier.height(20.dp))
 
         // NAMA RESEP
-        Text("Nama Resep", color = Brown, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Nama Resep",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Nama resep wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = recipeName,
-            onValueChange = { recipeName = it },
+            onValueChange = {
+                recipeName = it
+
+                if (it.isNotBlank() && errorMessage == "Nama resep wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = { Text("Contoh: Nasi Goreng Spesial") },
             shape = RoundedCornerShape(12.dp),
@@ -273,11 +293,35 @@ fun AddRecipeScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         // BAHAN
-        Text("Bahan-bahan", color = Brown, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Bahan-bahan",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Bahan-bahan wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = ingredients,
-            onValueChange = { ingredients = it },
+            onValueChange = {
+                ingredients = it
+
+                if (it.isNotBlank() && errorMessage == "Bahan-bahan wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text("Tuliskan bahan-bahan resep...")
@@ -290,11 +334,35 @@ fun AddRecipeScreen(
         Spacer(modifier = Modifier.height(18.dp))
 
         // LANGKAH MEMASAK
-        Text("Cara Memasak", color = Brown, fontWeight = FontWeight.Bold)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Cara Memasak",
+                color = Brown,
+                fontWeight = FontWeight.Bold
+            )
+
+            if (errorMessage == "Cara memasak wajib diisi.") {
+                Text(
+                    text = "Wajib diisi!",
+                    color = Color.Red,
+                    fontSize = 12.sp
+                )
+            }
+        }
 
         OutlinedTextField(
             value = steps,
-            onValueChange = { steps = it },
+            onValueChange = {
+                steps = it
+
+                if (it.isNotBlank() && errorMessage == "Cara memasak wajib diisi.") {
+                    errorMessage = ""
+                }
+            },
             modifier = Modifier.fillMaxWidth(),
             placeholder = {
                 Text("Tuliskan cara memasak...")
@@ -321,19 +389,32 @@ fun AddRecipeScreen(
 
             Button(
                 onClick = {
-                    if (recipeName.isNotBlank() &&
-                        ingredients.isNotBlank() &&
-                        steps.isNotBlank()
-                    ) {
-                        onSave(
-                            RecipeEntity(
-                                title = recipeName,
-                                category = category,
-                                ingredients = ingredients,
-                                steps = steps,
-                                imageUri = savedImagePath
+                    when {
+                        recipeName.isBlank() -> {
+                            errorMessage = "Nama resep wajib diisi."
+                        }
+
+                        ingredients.isBlank() -> {
+                            errorMessage = "Bahan-bahan wajib diisi."
+                        }
+
+                        steps.isBlank() -> {
+                            errorMessage = "Cara memasak wajib diisi."
+                        }
+
+                        else -> {
+                            errorMessage = ""
+
+                            onSave(
+                                RecipeEntity(
+                                    title = recipeName,
+                                    category = category,
+                                    ingredients = ingredients,
+                                    steps = steps,
+                                    imageUri = savedImagePath
+                                )
                             )
-                        )
+                        }
                     }
                 },
                 modifier = Modifier.weight(1f),
